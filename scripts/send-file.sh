@@ -11,14 +11,31 @@ set -euo pipefail
 # 从 openclaw.json 读取账号凭据，不单独存储敏感信息
 CONFIG_FILE="$HOME/.openclaw/openclaw.json"
 
-# ========== 账号选择 ==========
+# ========== 参数解析（合并账号选择与位置参数）==========
 
+FILE_PATH=""
+OPEN_ID=""
+MSG_TEXT=""
 ACCOUNT="erzhuang"
-
-for arg in "$@"; do
-    case "$arg" in
-        --account) shift; ACCOUNT="${1:-erzhuang}" ;;
+args=("$@")
+i=0
+while [ $i -lt ${#args[@]} ]; do
+    case "${args[$i]}" in
+        --account)
+            i=$((i+1))
+            ACCOUNT="${args[$i]:-erzhuang}"
+            ;;
+        *)
+            if [ -z "$FILE_PATH" ]; then
+                FILE_PATH="${args[$i]}"
+            elif [ -z "$OPEN_ID" ]; then
+                OPEN_ID="${args[$i]}"
+            else
+                MSG_TEXT="${args[$i]}"
+            fi
+            ;;
     esac
+    i=$((i+1))
 done
 
 if [ ! -f "$CONFIG_FILE" ]; then
@@ -50,27 +67,6 @@ if [ -z "$APP_ID" ] || [ -z "$APP_SECRET" ]; then
     echo "❌ 账号 '$ACCOUNT' 不存在于 $CONFIG_FILE" >&2
     exit 1
 fi
-
-# ========== 参数解析 ==========
-
-FILE_PATH=""
-OPEN_ID=""
-MSG_TEXT=""
-
-for arg in "$@"; do
-    case "$arg" in
-        --account) ;; # 已处理
-        *)
-            if [ -z "$FILE_PATH" ]; then
-                FILE_PATH="$arg"
-            elif [ -z "$OPEN_ID" ]; then
-                OPEN_ID="$arg"
-            else
-                MSG_TEXT="$arg"
-            fi
-            ;;
-    esac
-done
 
 if [ -z "$FILE_PATH" ] || [ -z "$OPEN_ID" ]; then
     echo "用法: $0 <文件路径> <open_id> [消息文本] [--account erzhuang|main]" >&2
