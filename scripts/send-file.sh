@@ -1,10 +1,11 @@
 #!/bin/bash
-# send-file.sh - 通过飞书开放 API 发送文件给指定用户
-# 用法: ./send-file.sh <文件路径> <接收者open_id> [消息文本] [--account erzhuang]
+# send-file.sh - 通过飞书开放 API 发送文件给指定用户/群聊
+# 用法: ./send-file.sh <文件路径> <接收者ID> [消息文本] [--account erzhuang]
+# 接收者ID: user:ou_xxx 或 chat:oc_xxx 或 ou_xxx(单聊) 或 oc_xxx(群聊)
 #
 # 示例:
-#   ./send-file.sh /tmp/testfile.pdf <你的open_id> "📄 文件说明"
-#   ./send-file.sh /tmp/testfile.pdf <你的open_id> "文件说明" --account main
+#   ./send-file.sh /tmp/testfile.pdf ou_xxxxx "📄 文件说明"
+#   ./send-file.sh /tmp/testfile.pdf chat:oc_xxxxx "文件说明" --account main
 
 set -euo pipefail
 
@@ -69,11 +70,17 @@ if [ -z "$APP_ID" ] || [ -z "$APP_SECRET" ]; then
 fi
 
 if [ -z "$FILE_PATH" ] || [ -z "$OPEN_ID" ]; then
-    echo "用法: $0 <文件路径> <open_id> [消息文本] [--account erzhuang|main]" >&2
+    echo "用法: $0 <文件路径> <接收者ID> [消息文本] [--account erzhuang|main]" >&2
+    echo "" >&2
+    echo "接收者ID格式:" >&2
+    echo "  ou_xxxxx     单聊（open_id）" >&2
+    echo "  user:ou_xxx  单聊（带前缀）" >&2
+    echo "  oc_xxxxx     群聊（chat_id）" >&2
+    echo "  chat:oc_xxx  群聊（带前缀）" >&2
     echo "" >&2
     echo "示例:" >&2
-    echo "  $0 /tmp/testfile.pdf <open_id> 📄 文件" >&2
-    echo "  $0 /tmp/data.pdf ou_xxxxx --account main" >&2
+    echo "  $0 /tmp/testfile.pdf ou_xxxxx 📄 文件" >&2
+    echo "  $0 /tmp/data.pdf chat:oc_xxxxx --account main" >&2
     exit 1
 fi
 
@@ -130,19 +137,38 @@ echo "   file_key: $FILE_KEY" >&2
 # Step 3: 发送文件消息
 echo "📨 发送中..." >&2
 
+# 根据 OPEN_ID 前缀自动判断 receive_id_type
+if [[ "$OPEN_ID" == chat:* ]]; then
+    RECEIVE_ID_TYPE="chat_id"
+    RECEIVE_ID="${OPEN_ID#chat:}"
+    echo "💬 群聊模式" >&2
+elif [[ "$OPEN_ID" == oc_* ]]; then
+    RECEIVE_ID_TYPE="chat_id"
+    RECEIVE_ID="$OPEN_ID"
+    echo "💬 群聊模式" >&2
+elif [[ "$OPEN_ID" == user:* ]]; then
+    RECEIVE_ID_TYPE="open_id"
+    RECEIVE_ID="${OPEN_ID#user:}"
+    echo "👤 单聊模式" >&2
+else
+    RECEIVE_ID_TYPE="open_id"
+    RECEIVE_ID="$OPEN_ID"
+    echo "👤 单聊模式" >&2
+fi
+
 # 先发文本消息（如果有的话）
 if [ -n "$MSG_TEXT" ]; then
-    TEXT_RESULT=$(curl -sf -X POST 'https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=open_id' \
+    TEXT_RESULT=$(curl -sf -X POST "https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=$RECEIVE_ID_TYPE" \
         -H "Authorization: Bearer $TOKEN" \
         -H 'Content-Type: application/json' \
-        -d "{\"receive_id\":\"$OPEN_ID\",\"msg_type\":\"text\",\"content\":\"{\\\"text\\\":\\\"$MSG_TEXT\\\"}\"}" 2>&1 || true)
+        -d "{\"receive_id\":\"$RECEIVE_ID\",\"msg_type\":\"text\",\"content\":\"{\\\"text\\\":\\\"$MSG_TEXT\\\"}\"}" 2>&1 || true)
 fi
 
 # 发送文件消息
-SEND_RESP=$(curl -sf -X POST 'https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=open_id' \
+SEND_RESP=$(curl -sf -X POST "https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=$RECEIVE_ID_TYPE" \
     -H "Authorization: Bearer $TOKEN" \
     -H 'Content-Type: application/json' \
-    -d "{\"receive_id\":\"$OPEN_ID\",\"msg_type\":\"file\",\"content\":\"{\\\"file_key\\\":\\\"$FILE_KEY\\\"}\"}")
+    -d "{\"receive_id\":\"$RECEIVE_ID\",\"msg_type\":\"file\",\"content\":\"{\\\"file_key\\\":\\\"$FILE_KEY\\\"}\"}")
 
 MSG_ID=$(echo "$SEND_RESP" | python3 -c 'import sys,json;print(json.load(sys.stdin)["data"]["message_id"])' 2>/dev/null || echo "unknown")
 

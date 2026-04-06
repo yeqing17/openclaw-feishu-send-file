@@ -1,6 +1,6 @@
 ---
 name: openclaw-feishu-send-file
-version: "1.0.3"
+version: "1.0.4"
 description: 通过 OpenClaw 在飞书聊天中发送文件附件。当用户说"发文件"、"把文件发给我"、"发送附件"、"发报告"或 Agent 需要向飞书用户发送本地文件时触发。支持两种方式：OpenClaw CLI（默认首选，通用所有渠道）和飞书 API 脚本（备选，飞书专用，无路径限制）。
 ---
 
