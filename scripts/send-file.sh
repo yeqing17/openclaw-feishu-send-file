@@ -27,8 +27,24 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 # 读取账号凭据（从 openclaw.json → channels.feishu.accounts）
-APP_ID=$(python3 -c "import json; d=json.load(open('$CONFIG_FILE')); print(d['channels']['feishu']['accounts']['$ACCOUNT']['appId'])")
-APP_SECRET=$(python3 -c "import json; d=json.load(open('$CONFIG_FILE')); print(d['channels']['feishu']['accounts']['$ACCOUNT']['appSecret'])")
+APP_ID=$(python3 -c "
+import json
+try:
+    d=json.load(open('$CONFIG_FILE'))
+    print(d['channels']['feishu']['accounts']['$ACCOUNT']['appId'])
+except (KeyError, TypeError):
+    d=json.load(open('$CONFIG_FILE'))
+    print(d['channels']['feishu']['appId'])
+")
+APP_SECRET=$(python3 -c "
+import json
+try:
+    d=json.load(open('$CONFIG_FILE'))
+    print(d['channels']['feishu']['accounts']['$ACCOUNT']['appSecret'])
+except (KeyError, TypeError):
+    d=json.load(open('$CONFIG_FILE'))
+    print(d['channels']['feishu']['appSecret'])
+")
 
 if [ -z "$APP_ID" ] || [ -z "$APP_SECRET" ]; then
     echo "❌ 账号 '$ACCOUNT' 不存在于 $CONFIG_FILE" >&2
@@ -73,6 +89,13 @@ fi
 
 FILE_NAME=$(basename "$FILE_PATH")
 FILE_SIZE=$(du -h "$FILE_PATH" | cut -f1)
+
+# 自动追加方式标记到消息文本
+if [ -n "$MSG_TEXT" ]; then
+    MSG_TEXT="$MSG_TEXT [via 飞书 API]"
+else
+    MSG_TEXT="[via 飞书 API]"
+fi
 
 # ========== 执行 ==========
 
@@ -128,4 +151,4 @@ SEND_RESP=$(curl -sf -X POST 'https://open.feishu.cn/open-apis/im/v1/messages?re
 MSG_ID=$(echo "$SEND_RESP" | python3 -c 'import sys,json;print(json.load(sys.stdin)["data"]["message_id"])' 2>/dev/null || echo "unknown")
 
 echo "" >&2
-echo "✅ 发送成功! message_id: $MSG_ID"
+echo "✅ 发送成功! message_id: $MSG_ID [via 飞书 API]"

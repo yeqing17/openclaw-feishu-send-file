@@ -1,6 +1,6 @@
 ---
 name: openclaw-feishu-send-file
-version: "1.0.1"
+version: "1.0.2"
 description: 通过 OpenClaw 在飞书聊天中发送文件附件。当用户说"发文件"、"把文件发给我"、"发送附件"、"发报告"或 Agent 需要向飞书用户发送本地文件时触发。支持两种方式：OpenClaw CLI（默认首选，通用所有渠道）和飞书 API 脚本（备选，飞书专用，无路径限制）。
 ---
 
@@ -14,18 +14,21 @@ description: 通过 OpenClaw 在飞书聊天中发送文件附件。当用户说
 
 白名单目录：`/tmp/openclaw/` · `~/.openclaw/media/` · `~/.openclaw/workspace/` · `~/.openclaw/sandboxes/`
 
+使用 `mktemp -d` 创建随机子目录，避免同名文件覆盖，无需手动清理（`/tmp` 由系统自动回收）。
+
 ```bash
-cp <文件路径> /tmp/openclaw/
+SEND_DIR=$(mktemp -d /tmp/openclaw/send-XXXXXX)
+cp <文件路径> "$SEND_DIR/<文件名>"
 openclaw message send \
   --channel feishu --account erzhuang \
   --target "user:<open_id>" \
-  --message "说明文字" \
-  --media /tmp/openclaw/<文件名>
+  --message "说明文字 [via OpenClaw CLI]" \
+  --media "$SEND_DIR/<文件名>"
 ```
 
 **必须指定 `--account`**，否则报 `appId and appSecret are required`。跨应用发送会报 `open_id cross app`。
 
-发送后**必须告知用户使用的是 OpenClaw CLI**。
+`--message` 末尾已自带 `[via OpenClaw CLI]` 标记，无需额外告知。
 
 ## 方式二：飞书 API 脚本（备选，飞书专用）
 
@@ -43,7 +46,7 @@ bash <skill安装路径>/openclaw-feishu-send-file/scripts/send-file.sh <文件�
 
 脚本从 `~/.openclaw/openclaw.json` 读取凭据，不单独存储敏感信息。
 
-发送后**必须告知用户使用的是飞书 API 脚本**。
+脚本执行完毕会自动输出 `[via 飞书 API]` 标记，无需额外告知。
 
 ## 常见陷阱
 
