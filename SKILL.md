@@ -1,6 +1,6 @@
 ---
 name: openclaw-feishu-send-file
-version: "1.0.4"
+version: "1.0.1"
 description: 通过 OpenClaw 在飞书聊天中发送文件附件。当用户说"发文件"、"把文件发给我"、"发送附件"、"发报告"或 Agent 需要向飞书用户发送本地文件时触发。支持两种方式：OpenClaw CLI（默认首选，通用所有渠道）和飞书 API 脚本（备选，飞书专用，无路径限制）。
 ---
 
@@ -16,6 +16,8 @@ description: 通过 OpenClaw 在飞书聊天中发送文件附件。当用户说
 
 使用 `mktemp -d` 创建随机子目录，避免同名文件覆盖，无需手动清理（`/tmp` 由系统自动回收）。
 
+⚠️ `--message` **为必选参数**，末尾必须包含 `[via OpenClaw CLI]` 标记。不可省略，不可只传 `--media`。
+
 ```bash
 SEND_DIR=$(mktemp -d /tmp/openclaw/send-XXXXXX)
 cp <文件路径> "$SEND_DIR/<文件名>"
@@ -27,8 +29,6 @@ openclaw message send \
 ```
 
 **必须指定 `--account`**，否则报 `appId and appSecret are required`。跨应用发送会报 `open_id cross app`。
-
-`--message` 末尾已自带 `[via OpenClaw CLI]` 标记，无需额外告知。
 
 ## 方式二：飞书 API 脚本（备选，飞书专用）
 
