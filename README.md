@@ -4,10 +4,18 @@
 
 ## 安装
 
-下载 [.skill 文件](https://github.com/yeqing17/openclaw-feishu-send-file/releases/download/v1.0.4/openclaw-feishu-send-file.skill) 安装，或克隆到 skill目录：
+### 从 GitHub 安装
+
+下载 [.skill 文件](https://github.com/yeqing17/openclaw-feishu-send-file/releases/download/v1.0.4/openclaw-feishu-send-file.skill) 安装，或克隆到 skill 目录：
 
 ```bash
 git clone https://github.com/yeqing17/openclaw-feishu-send-file.git ~/.openclaw/skills/openclaw-feishu-send-file
+```
+
+### 从公司仓库安装
+
+```bash
+git clone https://git.ipanel.cn/git/iskills/openclaw-feishu-send-file.git ~/.openclaw/skills/openclaw-feishu-send-file
 ```
 
 ## 功能
